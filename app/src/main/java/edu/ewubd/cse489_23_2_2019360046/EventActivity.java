@@ -1,14 +1,19 @@
 package edu.ewubd.cse489_23_2_2019360046;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.content.Intent;
+import android.database.Cursor;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
+import android.widget.Toast;
+
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -23,6 +28,9 @@ public class EventActivity extends Activity {
     private RadioButton rdIndoor, rdOutdoor, rdOnline;
 
     private RadioGroup radioGroup;
+
+    private String eventID = "";
+    private EventDB eventDB;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,6 +53,24 @@ public class EventActivity extends Activity {
         btnShare = findViewById(R.id.btnShare);
         btnCancel = findViewById(R.id.btnCancel);
 
+        eventDB = new EventDB(this);
+
+        String receivedEventId = getIntent().getStringExtra("event_id");
+        String name = getIntent().getStringExtra("name");
+        String place = getIntent().getStringExtra("place");
+        String email = getIntent().getStringExtra("email");
+        String phone = getIntent().getStringExtra("phone");
+        String description = getIntent().getStringExtra("description");
+
+        if (receivedEventId != null) {
+            etName.setText(name);
+            etPlace.setText(place);
+            etDescription.setText(description);
+            etPhone.setText(phone);
+            etEmail.setText(email);
+        } else {
+        }
+
         btnSave.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -56,9 +82,6 @@ public class EventActivity extends Activity {
                 String description = etDescription.getText().toString().trim();
                 String budgetStr = etBudget.getText().toString().trim();
                 String capacityStr = etCapacity.getText().toString().trim();
-
-                double budget = Double.parseDouble(budgetStr);
-                int capacity = Integer.parseInt(capacityStr);
 
                 String errMessage = "";
 
@@ -80,15 +103,42 @@ public class EventActivity extends Activity {
                     errMessage += "Invalid Event Type\n";
                 }
 
-                SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd H:m");
-                try {
-                    Date eventDate = formatter.parse(date);
+//                SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd H:i");
+//                try {
+//                    Date eventDate = formatter.parse(date);
+//                    Date now = new Date();
+//                    if (eventDate.before(now)) {
+//                        errMessage += "Event date need to be in the future\n";
+//                    }
+//                } catch (ParseException e) {
+//                    errMessage += "Invalid Date & Time format\n";
+//                }
+
+                boolean isDateTimeOkay = false;
+                String strDateTime = etDate.getText().toString();
+                SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd H:mm");
+                long datetime = 0;
+                try{
+                    Date eventDate = formatter.parse(strDateTime);
                     Date now = new Date();
-                    if (eventDate.before(now)) {
-                        errMessage += "Event date need to be in the future\n";
+                    isDateTimeOkay = eventDate.after(now);
+                    if(isDateTimeOkay){
+                        datetime = eventDate.getTime();
                     }
-                } catch (ParseException e) {
+                }catch (Exception e){}
+
+                if(!isDateTimeOkay){
                     errMessage += "Invalid Date & Time format\n";
+                }
+
+                double budget = 0;
+                int capacity = 0;
+
+                try {
+                    budget = Double.parseDouble(budgetStr);
+                    capacity = Integer.parseInt(capacityStr);
+                } catch (NumberFormatException e) {
+                    errMessage += "Invalid type in budget and capacity\n";
                 }
 
                 if (capacity <= 0) {
@@ -120,8 +170,15 @@ public class EventActivity extends Activity {
                 if (!errMessage.isEmpty()) {
                     showErrorDialog(errMessage);
                 } else {
-                    //
-                    
+                    if (receivedEventId != null) {
+                        eventID = receivedEventId;
+                        eventDB.updateEvent(receivedEventId, name, place, datetime, capacity, budget, email, phone, description);
+                        Toast.makeText(EventActivity.this, "Event update successfully!", Toast.LENGTH_SHORT).show();
+                    } else{
+                        eventID = name + System.currentTimeMillis();
+                        eventDB.insertEvent(eventID, name, place, datetime, capacity, budget, email, phone, description);
+                        Toast.makeText(EventActivity.this, "Event saved successfully!", Toast.LENGTH_SHORT).show();
+                    }
                 }
             }
         });
@@ -129,7 +186,40 @@ public class EventActivity extends Activity {
         btnShare.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                if (!eventID.isEmpty()) {
+                    Cursor cursor = eventDB.selectEvents("SELECT * FROM events WHERE ID = '" + eventID + "'");
+                    if (cursor != null && cursor.moveToFirst()) {
+                        @SuppressLint("Range") String eventName = cursor.getString(cursor.getColumnIndex("title"));
+                        @SuppressLint("Range") String eventPlace = cursor.getString(cursor.getColumnIndex("place"));
+                        @SuppressLint("Range") long eventDateTime = cursor.getLong(cursor.getColumnIndex("datetime"));
+                        @SuppressLint("Range") int eventCapacity = cursor.getInt(cursor.getColumnIndex("capacity"));
+                        @SuppressLint("Range") double eventBudget = cursor.getDouble(cursor.getColumnIndex("budget"));
+                        @SuppressLint("Range") String eventEmail = cursor.getString(cursor.getColumnIndex("email"));
+                        @SuppressLint("Range") String eventPhone = cursor.getString(cursor.getColumnIndex("phone"));
+                        @SuppressLint("Range") String eventDescription = cursor.getString(cursor.getColumnIndex("des"));
 
+                        StringBuilder eventInfoBuilder = new StringBuilder();
+                        eventInfoBuilder.append("Event Name: ").append(eventName).append("\n");
+                        eventInfoBuilder.append("Event Place: ").append(eventPlace).append("\n");
+                        eventInfoBuilder.append("Event Date and Time: ").append(new Date(eventDateTime).toString()).append("\n");
+                        eventInfoBuilder.append("Event Capacity: ").append(eventCapacity).append("\n");
+                        eventInfoBuilder.append("Event Budget: ").append(eventBudget).append("\n");
+                        eventInfoBuilder.append("Event Email: ").append(eventEmail).append("\n");
+                        eventInfoBuilder.append("Event Phone: ").append(eventPhone).append("\n");
+                        eventInfoBuilder.append("Event Description: ").append(eventDescription).append("\n");
+
+                        String eventInfo = eventInfoBuilder.toString();
+
+                        showErrorDialog(eventInfo);
+
+                        System.out.println(eventInfo);
+
+                        Intent intent = new Intent(EventActivity.this, ViewEventActivity.class);
+                        intent.putExtra("event_id", eventID);
+                        startActivity(intent);
+                    }
+                    cursor.close();
+                }
             }
         });
 

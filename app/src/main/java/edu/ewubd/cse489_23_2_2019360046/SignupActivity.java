@@ -6,12 +6,12 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
-import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.TableRow;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -21,8 +21,6 @@ public class SignupActivity extends Activity {
     private TextView btnToggle, tvToggleLabel, tvTitle;
     private TableRow rowName, rowEmail, rowPhone, rowRePass;
     private boolean isLoginPage = false;
-
-    private Button btnGo;
 
     String errMessage = "";
 
@@ -41,33 +39,55 @@ public class SignupActivity extends Activity {
         rowEmail = findViewById(R.id.rowEmail);
         rowPhone = findViewById(R.id.rowPhone);
         rowRePass = findViewById(R.id.rowRePass);
-        btnGo = findViewById(R.id.btnGo);
+        EditText etUserId = findViewById(R.id.etUserId);
+
+        try {
+            boolean isRemLoginChecked = sharedPreferences.getBoolean("isRemLoginChecked", false);
+            boolean isRemUsedIdChecked = sharedPreferences.getBoolean("isRemUsedIdChecked", false);
+            Log.d("Debug", "isRemUsedIdChecked: " + isRemUsedIdChecked);
+            if (isRemLoginChecked) {
+                startActivity(new Intent(SignupActivity.this, EventActivity.class));
+                finish();
+            }
+            if (isRemUsedIdChecked) {
+                String id = sharedPreferences.getString("userID", "");
+                etUserId.setText(id);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         this.changeView();
 
         btnToggle.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                isLoginPage = !isLoginPage;
+                isLoginPage = !isLoginPage;   // One click true another false
                 changeView();
             }
         });
 
-        btnGo.setOnClickListener(new View.OnClickListener() {
+        findViewById(R.id.btnGo).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if (isLoginPage) {
                     String userId = ((EditText) findViewById(R.id.etUserId)).getText().toString().trim();
                     String password = ((EditText) findViewById(R.id.etPassword)).getText().toString().trim();
+                    boolean isRemUsedIdChecked = ((CheckBox) findViewById(R.id.chkRemUsedId)).isChecked();
+                    boolean isRemLoginChecked = ((CheckBox) findViewById(R.id.chkRemLogin)).isChecked();
 
                     boolean isValidData = validateLoginData(userId, password);
 
                     if (isValidData) {
-                        SharedPreferences sharedPreferences = getSharedPreferences("UserData", MODE_PRIVATE);
+                        SharedPreferences.Editor editor = sharedPreferences.edit();
+                        editor.putBoolean("isRemUsedIdChecked", isRemUsedIdChecked);
+
                         String storedUserId = sharedPreferences.getString("userID", "");
                         String storedPassword = sharedPreferences.getString("password", "");
 
                         if (userId.equals(storedUserId) && password.equals(storedPassword)) {
+                            editor.putBoolean("isRemLoginChecked", isRemLoginChecked);
+                            editor.apply();
                             startActivity(new Intent(SignupActivity.this, EventActivity.class));
                             finish();
                         } else {
@@ -83,6 +103,8 @@ public class SignupActivity extends Activity {
                     String userID = ((EditText) findViewById(R.id.etUserId)).getText().toString().trim();
                     String password = ((EditText) findViewById(R.id.etPassword)).getText().toString().trim();
                     String rePassword = ((EditText) findViewById(R.id.etRePassword)).getText().toString().trim();
+                    boolean isRemUsedIdChecked =((CheckBox) findViewById(R.id.chkRemUsedId)).isChecked();
+                    boolean isRemLoginChecked = ((CheckBox) findViewById(R.id.chkRemLogin)).isChecked();
 
                     boolean isValidData = validateSignupData(name, email, phone, userID, password, rePassword);
 
@@ -94,6 +116,8 @@ public class SignupActivity extends Activity {
                             editor.putString("phone", phone);
                             editor.putString("userID", userID);
                             editor.putString("password", password);
+                            editor.putBoolean("isRemUsedIdChecked", isRemUsedIdChecked);
+                            editor.putBoolean("isRemLoginChecked", isRemLoginChecked);
                             editor.apply();
                             startActivity(new Intent(SignupActivity.this, EventActivity.class));
                             finish();

@@ -104,7 +104,7 @@
                 android:layout_marginRight="12dp"/>
 
             <EditText
-                android:inputType="datetime"
+                android:inputType="text"
                 android:id="@+id/etDate"
                 android:layout_width="0dp"
                 android:layout_weight="1"/>

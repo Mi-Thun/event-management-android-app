@@ -46,7 +46,7 @@ public class SignupActivity extends Activity {
             boolean isRemUsedIdChecked = sharedPreferences.getBoolean("isRemUsedIdChecked", false);
             Log.d("Debug", "isRemUsedIdChecked: " + isRemUsedIdChecked);
             if (isRemLoginChecked) {
-                startActivity(new Intent(SignupActivity.this, EventActivity.class));
+                startActivity(new Intent(SignupActivity.this, MainActivity.class));
                 finish();
             }
             if (isRemUsedIdChecked) {
@@ -88,7 +88,7 @@ public class SignupActivity extends Activity {
                         if (userId.equals(storedUserId) && password.equals(storedPassword)) {
                             editor.putBoolean("isRemLoginChecked", isRemLoginChecked);
                             editor.apply();
-                            startActivity(new Intent(SignupActivity.this, EventActivity.class));
+                            startActivity(new Intent(SignupActivity.this, MainActivity.class));
                             finish();
                         } else {
                             showErrorMessage("Invalid credentials.\n");
@@ -119,7 +119,7 @@ public class SignupActivity extends Activity {
                             editor.putBoolean("isRemUsedIdChecked", isRemUsedIdChecked);
                             editor.putBoolean("isRemLoginChecked", isRemLoginChecked);
                             editor.apply();
-                            startActivity(new Intent(SignupActivity.this, EventActivity.class));
+                            startActivity(new Intent(SignupActivity.this, MainActivity.class));
                             finish();
                         } else {
                             showErrorMessage("Passwords do not match.\n");
@@ -232,5 +232,3 @@ public class SignupActivity extends Activity {
         alert.show();
     }
 }
-
-

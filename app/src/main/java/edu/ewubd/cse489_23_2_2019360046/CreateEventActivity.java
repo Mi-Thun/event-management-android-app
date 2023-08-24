@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -16,21 +17,25 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.firebase.crashlytics.buildtools.reloc.org.apache.http.NameValuePair;
+import com.google.firebase.crashlytics.buildtools.reloc.org.apache.http.message.BasicNameValuePair;
+
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class CreateEventActivity extends AppCompatActivity {
+public class CreateEventActivity extends Activity {
     EditText etName, etPlace, etDate, etCapacity, etBudget, etEmail, etPhone, etDsc;
     TextView errorTv;
     RadioButton rIndoor, rOutdoor, rOnline;
     private String eventID = "";
     private EventDB eventDB;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,23 +56,23 @@ public class CreateEventActivity extends AppCompatActivity {
         rOutdoor = findViewById(R.id.rdOutdoor);
         rOnline = findViewById(R.id.rdOnline);
 
-        Intent i = getIntent();
-        if(i.hasExtra("EventID")){
-            eventID = i.getStringExtra("EventID");
-            etName.setText(i.getStringExtra("name"));
-            etPlace.setText(i.getStringExtra("place"));
+        Intent intent = getIntent();
+        if(intent.hasExtra("EventID")){
+            eventID = intent.getStringExtra("EventID");
+            etName.setText(intent.getStringExtra("name"));
+            etPlace.setText(intent.getStringExtra("place"));
 
             long longValue = 123456789L;
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm");
-            Date date = new Date(i.getLongExtra("datetime", longValue));
+            Date date = new Date(intent.getLongExtra("datetime", longValue));
             etDate.setText(sdf.format(date));
 
-            etCapacity.setText(String.valueOf(i.getIntExtra("capacity", 1)));
-            etBudget.setText(String.valueOf(i.getDoubleExtra("budget", 1)));
-            etEmail.setText(i.getStringExtra("email"));
-            etPhone.setText(i.getStringExtra("phone"));
-            etDsc.setText(i.getStringExtra("des"));
-            String type = i.getStringExtra("type");
+            etCapacity.setText(String.valueOf(intent.getIntExtra("capacity", 1)));
+            etBudget.setText(String.valueOf(intent.getDoubleExtra("budget", 1)));
+            etEmail.setText(intent.getStringExtra("email"));
+            etPhone.setText(intent.getStringExtra("phone"));
+            etDsc.setText(intent.getStringExtra("des"));
+            String type = intent.getStringExtra("type");
 
             rIndoor.setChecked("IN".equals(type));
             rOnline.setChecked("ON".equals(type));
@@ -145,12 +150,10 @@ public class CreateEventActivity extends AppCompatActivity {
                             }
                             else {
                                 _date = inputDate.atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli();
-                                Log.d("mydate1", String.valueOf(_date));
                             }
                         }
                     } catch (Exception ex) {
                         ex.printStackTrace();
-                        Log.d("mydate", String.valueOf(ex));
                         err += "Invalid date format (yyyy-MM-dd HH:mm)";
                     }
 
@@ -187,13 +190,19 @@ public class CreateEventActivity extends AppCompatActivity {
                     eventDB.updateEvent(eventID, name, place, _date, _capacity, _budget, email, phone, desc, eventType);
                     Toast.makeText(CreateEventActivity.this, "Event Update successfully!", Toast.LENGTH_SHORT).show();
                 }
+
+                // -----------------Remote database code start here
+                String keys[] = {"action", "sid", "semester", "id", "title", "place", "type", "date_time", "capacity", "budget", "email", "phone", "des"};
+                String values[] = {"backup", "2019-3-60-046", "2023-2", eventID, name, place, eventType , ""+_date, ""+_capacity, ""+_budget, email, phone, desc};
+                httpRequest(keys, values);
+                finish();
             }
         });
 
         findViewById(R.id.btnCancel).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                System.out.println("cancel btn");
+                finish();
             }
         });
 
@@ -224,4 +233,32 @@ public class CreateEventActivity extends AppCompatActivity {
         alert.show();
     }
 
+    private void httpRequest(final String keys[],final String values[]){
+        new AsyncTask<Void,Void,String>(){
+            @Override
+            protected String doInBackground(Void... voids) {
+                List<NameValuePair> params=new ArrayList<NameValuePair>();
+                for (int i=0; i<keys.length; i++){
+                    params.add(new BasicNameValuePair(keys[i],values[i]));
+                }
+                String url= "https://www.muthosoft.com/univ/cse489/index.php";
+                String data="";
+                try {
+                    data=JSONParser.getInstance().makeHttpRequest(url,"POST",params);
+                    System.out.println(data);
+                    return data;
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                return null;
+            }
+            protected void onPostExecute(String data){
+                if(data!=null){
+                    System.out.println(data);
+                    System.out.println("Ok2");
+                    Toast.makeText(getApplicationContext(),data,Toast.LENGTH_SHORT).show();
+                }
+            }
+        }.execute();
+    }
 }

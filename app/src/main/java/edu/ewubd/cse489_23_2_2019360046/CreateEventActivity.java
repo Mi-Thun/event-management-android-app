@@ -1,7 +1,11 @@
 package edu.ewubd.cse489_23_2_2019360046;
 
 import android.app.Activity;
+import android.app.AlarmManager;
 import android.app.AlertDialog;
+import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.AsyncTask;
@@ -9,13 +13,18 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
 
 import com.google.firebase.crashlytics.buildtools.reloc.org.apache.http.NameValuePair;
 import com.google.firebase.crashlytics.buildtools.reloc.org.apache.http.message.BasicNameValuePair;
@@ -31,11 +40,14 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class CreateEventActivity extends Activity {
-    EditText etName, etPlace, etDate, etCapacity, etBudget, etEmail, etPhone, etDsc;
+    EditText etName, etPlace, etDate, etCapacity, etBudget, etEmail, etPhone, etDsc, etReminderTime;
     TextView errorTv;
     RadioButton rIndoor, rOutdoor, rOnline;
     private String eventID = "";
     private EventDB eventDB;
+    private CheckBox chkReminder;
+    private LinearLayout layoutReminder;
+    private Long getTime;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,6 +68,21 @@ public class CreateEventActivity extends Activity {
         rOutdoor = findViewById(R.id.rdOutdoor);
         rOnline = findViewById(R.id.rdOnline);
 
+        chkReminder = findViewById(R.id.chkReminder);
+        layoutReminder = findViewById(R.id.layoutReminder);
+        etReminderTime = findViewById(R.id.etReminderTime);
+
+        chkReminder.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (isChecked) {
+                    layoutReminder.setVisibility(View.VISIBLE);
+                } else {
+                    layoutReminder.setVisibility(View.GONE);
+                }
+            }
+        });
+
         Intent intent = getIntent();
         if(intent.hasExtra("EventID")){
             eventID = intent.getStringExtra("EventID");
@@ -66,6 +93,8 @@ public class CreateEventActivity extends Activity {
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm");
             Date date = new Date(intent.getLongExtra("datetime", longValue));
             etDate.setText(sdf.format(date));
+
+            getTime = intent.getLongExtra("datetime", longValue);
 
             etCapacity.setText(String.valueOf(intent.getIntExtra("capacity", 1)));
             etBudget.setText(String.valueOf(intent.getDoubleExtra("budget", 1)));
@@ -157,6 +186,10 @@ public class CreateEventActivity extends Activity {
                         err += "Invalid date format (yyyy-MM-dd HH:mm)";
                     }
 
+                    System.out.println("________Create Date New________");
+                    System.out.println(_date);
+                    getTime = _date;
+
                     String EMAIL_REGEX = "^[\\w-_\\.+]*[\\w-_\\.]\\@([\\w]+\\.)+[\\w]+[\\w]$";
                     if(!email.matches(EMAIL_REGEX)){
                         err += "Invalid email format\n";
@@ -191,7 +224,13 @@ public class CreateEventActivity extends Activity {
                     Toast.makeText(CreateEventActivity.this, "Event Update successfully!", Toast.LENGTH_SHORT).show();
                 }
 
-                // -----------------Remote database code start here
+                if (!etReminderTime.getText().toString().isEmpty()) {
+                    int reminderTimeInMinutes = Integer.parseInt(etReminderTime.getText().toString());
+                    if (reminderTimeInMinutes > 0) {
+                        scheduleReminderNotification(getApplicationContext(), reminderTimeInMinutes);
+                    }
+                }
+
                 String keys[] = {"action", "sid", "semester", "id", "title", "place", "type", "date_time", "capacity", "budget", "email", "phone", "des"};
                 String values[] = {"backup", "2019-3-60-046", "2023-2", eventID, name, place, eventType , ""+_date, ""+_capacity, ""+_budget, email, phone, desc};
                 httpRequest(keys, values);
@@ -260,5 +299,25 @@ public class CreateEventActivity extends Activity {
                 }
             }
         }.execute();
+    }
+
+    private void scheduleReminderNotification(Context context, int reminderTimeInSeconds) {
+        Intent notificationIntent = new Intent(context, MyBroadcastReceiver.class);
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(
+                context,
+                uniqueRequestCode(),
+                notificationIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT
+        );
+
+        AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+
+        long reminderMillis = getTime - (reminderTimeInSeconds * 60 * 1000);
+
+        alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, reminderMillis, pendingIntent);
+    }
+
+    private int uniqueRequestCode() {
+        return (int) System.currentTimeMillis();
     }
 }

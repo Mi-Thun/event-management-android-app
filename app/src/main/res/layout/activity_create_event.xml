@@ -7,6 +7,7 @@
     tools:context=".CreateEventActivity"
     android:orientation="vertical"
     android:background="#ffff00">
+
     <TextView
         android:layout_width="match_parent"
         android:layout_height="60dp"
@@ -28,6 +29,7 @@
                 android:text="Name"
                 android:textSize="16sp"
                 android:layout_marginRight="12dp"/>
+
             <EditText
                 android:id="@+id/etName"
                 android:layout_width="0dp"
@@ -40,6 +42,7 @@
                 android:text="Place"
                 android:textSize="16sp"
                 android:layout_marginRight="12dp"/>
+
             <EditText
                 android:id="@+id/etPlace"
                 android:layout_width="0dp"
@@ -52,10 +55,12 @@
                 android:textSize="16sp"
                 android:layout_marginRight="12dp"
                 android:layout_gravity="center_vertical"/>
+
             <RadioGroup
                 android:layout_width="0dp"
                 android:layout_weight="1"
                 android:orientation="horizontal">
+
                 <RadioButton
                     android:id="@+id/rdIndoor"
                     android:layout_width="wrap_content"
@@ -63,6 +68,7 @@
                     android:layout_weight="1"
                     android:text="Indoor"
                     android:textSize="16dp"/>
+
                 <RadioButton
                     android:id="@+id/rdOutdoor"
                     android:layout_width="wrap_content"
@@ -70,6 +76,7 @@
                     android:layout_weight="1"
                     android:text="Outdoor"
                     android:textSize="16dp"/>
+
                 <RadioButton
                     android:id="@+id/rdOnline"
                     android:layout_width="wrap_content"
@@ -86,6 +93,7 @@
                 android:text="Date &amp; Time"
                 android:textSize="16sp"
                 android:layout_marginRight="12dp"/>
+
             <EditText
                 android:id="@+id/etDateTime"
                 android:layout_width="0dp"
@@ -98,6 +106,7 @@
                 android:text="Capacity"
                 android:textSize="16sp"
                 android:layout_marginRight="12dp"/>
+
             <EditText
                 android:id="@+id/etCapacity"
                 android:layout_width="0dp"
@@ -141,13 +150,12 @@
                 android:inputType="phone"/>
         </TableRow>
 
-
-
         <TableRow>
             <TextView
                 android:text="Description"
                 android:textSize="16sp"
                 android:layout_marginRight="12dp"/>
+
             <EditText
                 android:id="@+id/etDes"
                 android:layout_width="0dp"
@@ -155,6 +163,35 @@
                 android:lines="3"/>
         </TableRow>
 
+        <CheckBox
+            android:id="@+id/chkReminder"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Set Reminder"
+            android:checked="false"/>
+
+        <LinearLayout
+            android:id="@+id/layoutReminder"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Reminder Time"
+                android:layout_gravity="center_vertical"/>
+
+            <EditText
+                android:id="@+id/etReminderTime"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:inputType="number"
+                android:hint="Minutes before event"/>
+
+        </LinearLayout>
 
         <TextView
             android:id="@+id/tvErrorMsg"
@@ -168,7 +205,6 @@
 
     </TableLayout>
 
-<!--    bottom panel-->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="40dp"
